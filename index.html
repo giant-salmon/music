@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Work Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ee; --card: #fffdf9; --text: #22201c; --muted: #77716a; --line: #e4ded5;
+  --accent: #2f6b4f; --accent-bg: #e3efe8; --warn: #9a4a1c;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+body.evening {
+  --bg: #f3eee8; --accent: #8a4b2a; --accent-bg: #f4e4d8;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #171614; --card: #201f1c; --text: #ece8e1; --muted: #9a948b; --line: #34312c; --accent: #7cc4a0; --accent-bg: #1f3329; --warn: #e8a27a; }
+  body.evening { --bg: #181513; --accent: #e3a17c; --accent-bg: #3a261b; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.6 var(--font-body); }
+.wrap { max-width: 560px; margin: 0 auto; padding: 48px 16px 64px; display: grid; gap: 24px; }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.brand { font: 500 1.6rem/1.1 var(--font-display); margin: 0; }
+.date { font-size: 0.875rem; color: var(--muted); }
+.choices { display: grid; gap: 12px; }
+.artist { display: grid; gap: 8px; }
+.artist + .artist { margin-top: 12px; }
+.artist h2 { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.albums { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 8px; }
+.choice {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); font: inherit; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.choice:hover { border-color: var(--accent); }
+.choice:focus-visible, .ctl:focus-visible, .connect:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.icon {
+  flex: none; width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: var(--card);
+}
+.icon svg { width: 16px; height: 16px; margin-left: 2px; }
+.choice .name { display: block; font: 500 1.08rem/1.25 var(--font-display); }
+.choice .sub { display: block; font-size: 0.8125rem; color: var(--muted); }
+.compact .choice { padding: 10px 12px; gap: 12px; }
+.compact .icon { width: 32px; height: 32px; }
+.compact .icon svg { width: 13px; height: 13px; }
+.compact .choice .name { font-size: 1rem; }
+
+.now {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--accent);
+}
+.now[hidden], .signin[hidden] { display: none; }
+.now img { flex: none; width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: var(--accent-bg); }
+.now .meta { flex: 1; min-width: 0; }
+.now .track { display: block; font: 500 1.05rem/1.25 var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now .by { display: block; font-size: 0.8125rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.controls { display: flex; gap: 6px; flex: none; }
+.ctl {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+  background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer;
+}
+.ctl:hover { border-color: var(--accent); }
+.ctl.main { background: var(--accent); border-color: var(--accent); color: var(--card); width: 44px; height: 44px; }
+.ctl svg { width: 16px; height: 16px; }
+
+.signin { display: grid; gap: 10px; padding: 18px; border-radius: 14px; border: 1px dashed var(--line); background: var(--card); }
+.signin p { margin: 0; font-size: 0.9375rem; color: var(--muted); }
+.connect {
+  justify-self: start; padding: 10px 18px; border-radius: 999px; border: 0;
+  background: var(--accent); color: var(--card); font: 500 0.9375rem var(--font-body); cursor: pointer;
+}
+.rule { margin: 0; font-size: 0.875rem; color: var(--muted); }
+.rule.warn { color: var(--warn); }
+.switch { justify-self: start; background: none; border: 0; padding: 0; font: inherit; font-size: 0.875rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="brand" id="brand">Work Music</h1>
+    <span class="date" id="date"></span>
+  </header>
+
+  <div class="signin" id="signin" hidden>
+    <p>Sign in to Spotify once and this page plays music by itself. It remembers you after that.</p>
+    <button class="connect" id="connect" type="button">Sign in to Spotify</button>
+  </div>
+
+  <div class="now" id="now" hidden aria-live="polite">
+    <img id="art" alt="">
+    <div class="meta">
+      <span class="track" id="track"></span>
+      <span class="by" id="by"></span>
+    </div>
+    <div class="controls">
+      <button class="ctl" id="prev" type="button" aria-label="Previous track">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM20 5.5v13a1 1 0 0 1-1.53.85L9 13.2a1.4 1.4 0 0 1 0-2.4l9.47-6.15A1 1 0 0 1 20 5.5z"/></svg>
+      </button>
+      <button class="ctl main" id="toggle" type="button" aria-label="Pause"></button>
+      <button class="ctl" id="next" type="button" aria-label="Next track">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5.5v13a1 1 0 0 0 1.53.85L15 13.2a1.4 1.4 0 0 0 0-2.4L5.53 4.65A1 1 0 0 0 4 5.5z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="choices" id="choices"></div>
+
+  <p class="rule" id="rule"></p>
+  <button class="switch" id="switch" type="button"></button>
+</div>
+
+<script>
+// ---- Spotify app settings ----
+const CLIENT_ID = "b274d5418158410898b9c31d29c8a290";
+const REDIRECT_URI = "https://giant-salmon.github.io/music/";
+
+// ---- Your music. To add or swap anything, ask Claude in chat for an updated file. ----
+
+// Shown during the workday (5 am to 5 pm).
+const WORK = [
+  { name: "Lofi Girl", sub: "beats to relax/study to · about 500 tracks",
+    uri: "spotify:playlist:0vvXsWCC9xrXsKd4FyS8kM" },
+  { name: "The Imitation Game", sub: "Soundtrack · Alexandre Desplat · 51 min",
+    uri: "spotify:album:2CsfKW5tze2DZKq49iARk1", album: true },
+  { name: "Synthwave", sub: "beats to chill/game to · Lofi Girl · about 400 tracks",
+    uri: "spotify:playlist:1YIe34rcmLjCYpY9wJoM2p" },
+  { name: "The Theory of Everything", sub: "Soundtrack · Jóhann Jóhannsson · 27 tracks",
+    uri: "spotify:album:02VRifrsiTM73hPGjXduRQ", album: true }
+];
+
+// Shown in the evening (5 pm to 5 am). Full-length albums, oldest first.
+const EVENING = [
+  { artist: "Vampire Weekend", albums: [
+    { name: "Vampire Weekend", year: 2008, uri: "spotify:album:7n8NJkGKAl2np1bXiRn0CY" },
+    { name: "Contra", year: 2010, uri: "spotify:album:0H8cHlbp6eieUUOLmv4FzJ" },
+    { name: "Modern Vampires of the City", year: 2013, uri: "spotify:album:1GXMNFfoHF4sN7lG8gZq1j" },
+    { name: "Father of the Bride", year: 2019, uri: "spotify:album:1A3nVEWRJ8yvlPzawHI1pQ" },
+    { name: "Only God Was Above Us", year: 2024, uri: "spotify:album:1W04wu2W4OIcuiNc5AMB3y" }
+  ]},
+  { artist: "Role Model", albums: [
+    { name: "Rx", year: 2022, uri: "spotify:album:1PhcZ4Ov6ZxuaUZF8r9rbk" },
+    { name: "Kansas Anymore", year: 2024, uri: "spotify:album:4OZ6nCbn8w0cHr1m0qiD2s" },
+    { name: "Chuck Timely & The Hourglass", year: 2026, uri: "spotify:album:7fZFja60WuvgF48NW1au0R" }
+  ]},
+  { artist: "Remi Wolf", albums: [
+    { name: "Juno", year: 2021, uri: "spotify:album:7tJ8Wtej161vR0uCbGDiDR" },
+    { name: "Big Ideas", year: 2024, uri: "spotify:album:7HQOEMCDGKY8eJyQPdsnYH" },
+    { name: "Mud", year: 2026, uri: "spotify:album:19cvoEE5d3pMkxLFL5TsAG" }
+  ]},
+  { artist: "Sylvan Esso", albums: [
+    { name: "Sylvan Esso", year: 2014, uri: "spotify:album:5Abelpx4c3FzhTOZP3ZIvS" },
+    { name: "What Now", year: 2017, uri: "spotify:album:1fo3f7dtAoeYMpiN5FvK9T" },
+    { name: "Free Love", year: 2020, uri: "spotify:album:2KAPJ40On8JY1Yt64JJgTk" },
+    { name: "No Rules Sandy", year: 2022, uri: "spotify:album:6rl4rzZxECegl9PdYG0hfk" },
+    { name: "Ow ∞", year: 2026, uri: "spotify:album:4VuKsKSeMRnaAou9kYsNhS" }
+  ]}
+];
+
+const EVENING_STARTS = 17; // 5 pm
+const EVENING_ENDS = 5;    // 5 am
+
+// ---------------------------------------------------------------------------
+
+const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.52.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+const $ = (id) => document.getElementById(id);
+const choicesEl = $("choices"), ruleEl = $("rule"), switchEl = $("switch");
+
+let mode = null;          // "work" or "evening"
+let manual = false;       // true once you switch views by hand
+let currentUri = null;
+let buttons = [];
+
+function setRule(text, warn) {
+  ruleEl.textContent = text;
+  ruleEl.classList.toggle("warn", !!warn);
+}
+
+function clockMode() {
+  const h = new Date().getHours();
+  return (h >= EVENING_STARTS || h < EVENING_ENDS) ? "evening" : "work";
+}
+
+function makeButton(label, sub, opt) {
+  const b = document.createElement("button");
+  b.className = "choice";
+  b.type = "button";
+  b.setAttribute("aria-pressed", opt.uri === currentUri ? "true" : "false");
+  b.innerHTML = '<span class="icon">' + PLAY_ICON + '</span><span><span class="name"></span><span class="sub"></span></span>';
+  b.querySelector(".name").textContent = label;
+  b.querySelector(".sub").textContent = sub;
+  b.addEventListener("click", () => choose(opt, b));
+  buttons.push(b);
+  return b;
+}
+
+function render(newMode) {
+  mode = newMode;
+  buttons = [];
+  choicesEl.innerHTML = "";
+  document.body.classList.toggle("evening", mode === "evening");
+  $("brand").textContent = mode === "evening" ? "Evening Music" : "Work Music";
+  document.title = mode === "evening" ? "Evening Music" : "Work Music";
+  $("date").textContent =
+    new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+
+  if (mode === "work") {
+    choicesEl.classList.remove("compact");
+    WORK.forEach(opt => choicesEl.appendChild(makeButton("Play " + opt.name, opt.sub, opt)));
+  } else {
+    choicesEl.classList.add("compact");
+    EVENING.forEach(group => {
+      const sec = document.createElement("section");
+      sec.className = "artist";
+      const h = document.createElement("h2");
+      h.textContent = group.artist;
+      const grid = document.createElement("div");
+      grid.className = "albums";
+      group.albums.forEach(al => {
+        grid.appendChild(makeButton(al.name, String(al.year), { uri: al.uri, album: true, name: al.name }));
+      });
+      sec.append(h, grid);
+      choicesEl.appendChild(sec);
+    });
+  }
+
+  if (!currentUri && !ruleEl.classList.contains("warn")) setRule(mode === "evening"
+    ? "Pick an album. It plays right here."
+    : "Pick one. It plays right here until you pause it.");
+  switchEl.textContent = mode === "evening" ? "Show work music" : "Show evening albums";
+}
+
+switchEl.addEventListener("click", () => {
+  manual = true;
+  render(mode === "evening" ? "work" : "evening");
+});
+
+// Swap views on their own at 5 pm and 5 am, unless you switched by hand.
+// Whatever is playing keeps playing.
+setInterval(() => {
+  if (!manual && clockMode() !== mode) render(clockMode());
+}, 60000);
+
+// ===========================================================================
+// Spotify sign-in (PKCE: no secret key, the sign-in stays in this browser)
+// ===========================================================================
+const SCOPES = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state";
+const STORE = "workMusic.auth";
+
+function loadAuth() { try { return JSON.parse(localStorage.getItem(STORE)) || null; } catch (e) { return null; } }
+function saveAuth(a) { try { localStorage.setItem(STORE, JSON.stringify(a)); } catch (e) {} }
+function clearAuth() { try { localStorage.removeItem(STORE); } catch (e) {} }
+
+function b64url(bytes) {
+  return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function signIn() {
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(64)));
+  const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+  try { sessionStorage.setItem("workMusic.verifier", verifier); } catch (e) {}
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI,
+    scope: SCOPES, code_challenge_method: "S256", code_challenge: challenge
+  });
+  location.href = "https://accounts.spotify.com/authorize?" + params;
+}
+
+async function tokenRequest(body) {
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(body)
+  });
+  if (!res.ok) throw new Error("token " + res.status);
+  const j = await res.json();
+  const prev = loadAuth() || {};
+  const auth = {
+    access: j.access_token,
+    refresh: j.refresh_token || prev.refresh,
+    expires: Date.now() + (j.expires_in - 60) * 1000
+  };
+  saveAuth(auth);
+  return auth;
+}
+
+async function finishSignInIfReturning() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("code") && !q.has("error")) return;
+  history.replaceState(null, "", REDIRECT_URI);
+  if (q.has("error")) { setRule("Spotify sign-in was cancelled. Try again when you're ready.", true); return; }
+  let verifier = null;
+  try { verifier = sessionStorage.getItem("workMusic.verifier"); } catch (e) {}
+  if (!verifier) { setRule("Sign-in didn't finish. Try signing in again.", true); return; }
+  await tokenRequest({
+    grant_type: "authorization_code", code: q.get("code"),
+    redirect_uri: REDIRECT_URI, client_id: CLIENT_ID, code_verifier: verifier
+  });
+}
+
+let refreshing = null;
+async function getToken() {
+  const a = loadAuth();
+  if (!a) return null;
+  if (Date.now() < a.expires) return a.access;
+  if (!a.refresh) return null;
+  if (!refreshing) {
+    refreshing = tokenRequest({ grant_type: "refresh_token", refresh_token: a.refresh, client_id: CLIENT_ID })
+      .then(x => x.access)
+      .catch(() => { clearAuth(); return null; })
+      .finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+function showSignIn(msg) {
+  $("signin").hidden = false;
+  if (msg) setRule(msg, true);
+}
+$("connect").addEventListener("click", signIn);
+
+// ===========================================================================
+// The in-page player (Spotify Web Playback SDK)
+// ===========================================================================
+let player = null, deviceId = null, pending = null, paused = true;
+
+function setToggleIcon() {
+  $("toggle").innerHTML = paused ? PLAY_ICON : PAUSE_ICON;
+  $("toggle").setAttribute("aria-label", paused ? "Play" : "Pause");
+}
+
+function startPlayer() {
+  if (player) return;
+  const s = document.createElement("script");
+  s.src = "https://sdk.scdn.co/spotify-player.js";
+  document.body.appendChild(s);
+}
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  player = new Spotify.Player({
+    name: "Work Music page",
+    getOAuthToken: cb => { getToken().then(t => { if (t) cb(t); else showSignIn("Your Spotify sign-in expired. Sign in again."); }); },
+    volume: 0.8
+  });
+
+  player.addListener("ready", ({ device_id }) => {
+    deviceId = device_id;
+    if (pending) { const p = pending; pending = null; playUri(p); }
+  });
+  player.addListener("not_ready", () => { deviceId = null; });
+
+  player.addListener("player_state_changed", state => {
+    if (!state || !state.track_window || !state.track_window.current_track) return;
+    const t = state.track_window.current_track;
+    paused = state.paused;
+    $("now").hidden = false;
+    $("track").textContent = t.name;
+    $("by").textContent = t.artists.map(a => a.name).join(", ") + " · " + t.album.name;
+    const img = (t.album.images || []).slice().sort((a, b) => (a.width || 0) - (b.width || 0))
+      .find(i => (i.width || 0) >= 64) || (t.album.images || [])[0];
+    if (img) $("art").src = img.url;
+    setToggleIcon();
+  });
+
+  player.addListener("initialization_error", () =>
+    setRule("This browser can't play Spotify here. Chrome on a laptop works best.", true));
+  player.addListener("authentication_error", () => { clearAuth(); showSignIn("Spotify needs you to sign in again."); });
+  player.addListener("account_error", () =>
+    setRule("Spotify says this account can't play here. It needs Premium, and the account has to be added under User Management in your Spotify developer app.", true));
+  player.addListener("playback_error", () =>
+    setRule("Spotify couldn't play that one. Try again, or pick something else.", true));
+
+  player.connect();
+};
+
+async function api(path, method, body) {
+  const t = await getToken();
+  if (!t) { showSignIn("Sign in to Spotify to play music."); throw new Error("no token"); }
+  const res = await fetch("https://api.spotify.com/v1" + path, {
+    method,
+    headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (res.status === 401) { clearAuth(); showSignIn("Spotify needs you to sign in again."); throw new Error("401"); }
+  if (!res.ok && res.status !== 204) throw new Error(String(res.status));
+  return res;
+}
+
+async function playUri(opt) {
+  if (!deviceId) { pending = opt; setRule("Getting the player ready…"); return; }
+  try {
+    // Playlists start on shuffle so they don't open on the same song every day; albums play in order.
+    await api("/me/player/play?device_id=" + deviceId, "PUT", { context_uri: opt.uri });
+    api("/me/player/shuffle?state=" + (opt.album ? "false" : "true") + "&device_id=" + deviceId, "PUT").catch(() => {});
+    setRule(opt.album
+      ? "Albums stop when they end. Pick it again to hear it twice."
+      : "This runs until you pause it. Pick another any time to switch.");
+  } catch (e) {
+    if (e.message === "403") setRule("Spotify blocked playback. Check that this account is listed under User Management in your Spotify developer app.", true);
+    else if (e.message !== "no token" && e.message !== "401") setRule("Spotify didn't start that one. Try again in a moment.", true);
+  }
+}
+
+function choose(opt, btn) {
+  currentUri = opt.uri;
+  buttons.forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+  // Browsers only allow sound after a click; this tells the player the click happened.
+  if (player && player.activateElement) { try { player.activateElement(); } catch (e) {} }
+  if (!loadAuth()) { showSignIn("Sign in to Spotify first. After that, one click plays."); return; }
+  playUri(opt);
+}
+
+$("toggle").addEventListener("click", () => player && player.togglePlay());
+$("next").addEventListener("click", () => player && player.nextTrack());
+$("prev").addEventListener("click", () => player && player.previousTrack());
+
+// Space bar pauses and resumes, unless you're typing somewhere.
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && player && !$("now").hidden && !/INPUT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) {
+    e.preventDefault();
+    player.togglePlay();
+  }
+});
+
+// ---- Start ----
+render(clockMode());
+setToggleIcon();
+(async () => {
+  try { await finishSignInIfReturning(); }
+  catch (e) { setRule("Sign-in didn't finish. Try signing in again.", true); }
+  if (loadAuth()) { $("signin").hidden = true; startPlayer(); }
+  else showSignIn();
+})();
+</script>
+</body>
+</html>
