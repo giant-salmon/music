@@ -15,23 +15,31 @@
   --font-body: "Inter", system-ui, sans-serif;
 }
 body.evening {
-  --bg: #f3eee8; --accent: #8a4b2a; --accent-bg: #f4e4d8;
+  --bg: #f3eee8; --accent: #8a4b2a; --accent-bg: #f4e4d8; --muted: #6b655e;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #171614; --card: #201f1c; --text: #ece8e1; --muted: #9a948b; --line: #34312c; --accent: #7cc4a0; --accent-bg: #1f3329; --warn: #e8a27a; }
-  body.evening { --bg: #181513; --accent: #e3a17c; --accent-bg: #3a261b; }
+  body.evening { --bg: #181513; --accent: #e3a17c; --accent-bg: #3a261b; --muted: #9a948b; }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.6 var(--font-body); }
 .wrap { max-width: 560px; margin: 0 auto; padding: 48px 16px 64px; display: grid; gap: 24px; }
+body.evening .wrap { max-width: 1180px; }
 header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .brand { font: 500 1.6rem/1.1 var(--font-display); margin: 0; }
+body.evening .brand { font-size: 1.9rem; }
 .date { font-size: 0.875rem; color: var(--muted); }
+
+/* Layout: one column for work, turntable beside the shelf in the evening */
+.stage { display: grid; gap: 24px; }
+.left { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
+body.evening .stage { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+body.evening .left { flex: 1 1 420px; max-width: 500px; }
+body.evening .choices { flex: 1.4 1 460px; min-width: 0; }
+@media (min-width: 960px) { body.evening .left { position: sticky; top: 24px; } }
+
+/* Work buttons */
 .choices { display: grid; gap: 12px; }
-.artist { display: grid; gap: 8px; }
-.artist + .artist { margin-top: 12px; }
-.artist h2 { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
-.albums { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 8px; }
 .choice {
   display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
   padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line);
@@ -39,7 +47,7 @@ header { display: flex; justify-content: space-between; align-items: baseline; g
   transition: border-color .15s, background .15s;
 }
 .choice:hover { border-color: var(--accent); }
-.choice:focus-visible, .ctl:focus-visible, .connect:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice:focus-visible, .ctl:focus-visible, .connect:focus-visible, .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
 .icon {
   flex: none; width: 40px; height: 40px; border-radius: 50%;
@@ -48,27 +56,77 @@ header { display: flex; justify-content: space-between; align-items: baseline; g
 .icon svg { width: 16px; height: 16px; margin-left: 2px; }
 .choice .name { display: block; font: 500 1.08rem/1.25 var(--font-display); }
 .choice .sub { display: block; font-size: 0.8125rem; color: var(--muted); }
-.compact .choice { padding: 10px 12px; gap: 12px; }
-.compact .icon { width: 32px; height: 32px; }
-.compact .icon svg { width: 13px; height: 13px; }
-.compact .choice .name { font-size: 1rem; }
 
+/* Evening shelf */
+.artist { display: grid; gap: 10px; }
+.artist + .artist { margin-top: 18px; }
+.artist h2 { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 12px; }
+.tile { display: grid; gap: 6px; align-content: start; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: var(--text); font: inherit; }
+.tile .cover {
+  aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--accent-bg);
+  display: grid; place-items: center; transition: transform .15s ease, box-shadow .15s ease;
+}
+.tile:hover .cover { transform: translateY(-3px); }
+.tile[aria-pressed="true"] .cover { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
+.tile .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile .fallback { font: 500 0.85rem/1.2 var(--font-display); padding: 10px; color: var(--accent); text-align: center; }
+.tile .t { font-size: 0.8125rem; line-height: 1.25; }
+.tile .y { font-size: 0.75rem; color: var(--muted); margin-top: -4px; }
+
+/* Turntable */
+.table[hidden] { display: none; }
+.table { position: relative; width: 100%; aspect-ratio: 52 / 47; border-radius: 18px; background: #2b2521; overflow: hidden; }
+.platter { position: absolute; left: 6.15%; top: 7.45%; width: 76.9%; aspect-ratio: 1; border-radius: 50%; background: #171513; }
+.vinyl {
+  position: absolute; inset: 2%; border-radius: 50%;
+  background: repeating-radial-gradient(circle at center, #121110 0 1px, #1e1c1a 1px 3px);
+  animation: spin 1.8s linear infinite; animation-play-state: paused;
+}
+.table.playing .vinyl { animation-play-state: running; }
+.label {
+  position: absolute; left: 50%; top: 50%; width: 35%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border-radius: 50%; overflow: hidden; background: #3a332e; color: #cdbfae;
+  display: grid; place-items: center; text-align: center; padding: 10%;
+  font: 500 0.8rem/1.2 var(--font-display);
+}
+.label img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.label img[hidden] { display: none; }
+.label::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 7%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); border-radius: 50%; background: #f3eee8;
+}
+.pivot { position: absolute; left: 86.15%; top: 7.66%; width: 9.2%; aspect-ratio: 1; border-radius: 50%; background: #4a423c; border: 2px solid #5c534c; }
+.arm {
+  position: absolute; left: 89.6%; top: 12.8%; width: 1.6%; height: 63.8%; border-radius: 4px;
+  background: #cfc6ba; transform-origin: 50% 0; transition: transform .9s cubic-bezier(.3, .1, .2, 1);
+}
+.table.playing .arm { transform: rotate(24deg); }
+.arm::after { content: ""; position: absolute; left: -110%; bottom: -8%; width: 320%; height: 11%; border-radius: 4px; background: #8b8178; }
+.rpm { position: absolute; left: 6.15%; bottom: 3.4%; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #b8ada1; }
+.lamp { width: 8px; height: 8px; border-radius: 50%; background: #5c534c; }
+.table.playing .lamp { background: #e0b65a; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .vinyl { animation: none; } .arm { transition: none; } }
+
+/* Now playing bar */
 .now {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--accent);
 }
 .now[hidden], .signin[hidden] { display: none; }
 .now img { flex: none; width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: var(--accent-bg); }
+body.evening .now img { display: none; }
 .now .meta { flex: 1; min-width: 0; }
 .now .track { display: block; font: 500 1.05rem/1.25 var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .now .by { display: block; font-size: 0.8125rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .controls { display: flex; gap: 6px; flex: none; }
 .ctl {
-  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line);
   background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer;
 }
 .ctl:hover { border-color: var(--accent); }
-.ctl.main { background: var(--accent); border-color: var(--accent); color: var(--card); width: 44px; height: 44px; }
+.ctl.main { background: var(--accent); border-color: var(--accent); color: var(--card); width: 46px; height: 46px; }
 .ctl svg { width: 16px; height: 16px; }
 
 .signin { display: grid; gap: 10px; padding: 18px; border-radius: 14px; border: 1px dashed var(--line); background: var(--card); }
@@ -94,24 +152,39 @@ header { display: flex; justify-content: space-between; align-items: baseline; g
     <button class="connect" id="connect" type="button">Sign in to Spotify</button>
   </div>
 
-  <div class="now" id="now" hidden aria-live="polite">
-    <img id="art" alt="">
-    <div class="meta">
-      <span class="track" id="track"></span>
-      <span class="by" id="by"></span>
-    </div>
-    <div class="controls">
-      <button class="ctl" id="prev" type="button" aria-label="Previous track">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM20 5.5v13a1 1 0 0 1-1.53.85L9 13.2a1.4 1.4 0 0 1 0-2.4l9.47-6.15A1 1 0 0 1 20 5.5z"/></svg>
-      </button>
-      <button class="ctl main" id="toggle" type="button" aria-label="Pause"></button>
-      <button class="ctl" id="next" type="button" aria-label="Next track">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5.5v13a1 1 0 0 0 1.53.85L15 13.2a1.4 1.4 0 0 0 0-2.4L5.53 4.65A1 1 0 0 0 4 5.5z"/></svg>
-      </button>
-    </div>
-  </div>
+  <div class="stage">
+    <div class="left">
+      <div class="table" id="table" hidden aria-hidden="true">
+        <div class="platter">
+          <div class="vinyl">
+            <div class="label"><img id="labelImg" alt="" hidden><span id="labelText">Pick an album</span></div>
+          </div>
+        </div>
+        <div class="pivot"></div>
+        <div class="arm"></div>
+        <div class="rpm"><span class="lamp"></span><span>33⅓ rpm</span></div>
+      </div>
 
-  <div class="choices" id="choices"></div>
+      <div class="now" id="now" hidden aria-live="polite">
+        <img id="art" alt="">
+        <div class="meta">
+          <span class="track" id="track"></span>
+          <span class="by" id="by"></span>
+        </div>
+        <div class="controls">
+          <button class="ctl" id="prev" type="button" aria-label="Previous track">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM20 5.5v13a1 1 0 0 1-1.53.85L9 13.2a1.4 1.4 0 0 1 0-2.4l9.47-6.15A1 1 0 0 1 20 5.5z"/></svg>
+          </button>
+          <button class="ctl main" id="toggle" type="button" aria-label="Pause"></button>
+          <button class="ctl" id="next" type="button" aria-label="Next track">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5.5v13a1 1 0 0 0 1.53.85L15 13.2a1.4 1.4 0 0 0 0-2.4L5.53 4.65A1 1 0 0 0 4 5.5z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="choices" id="choices"></div>
+  </div>
 
   <p class="rule" id="rule"></p>
   <button class="switch" id="switch" type="button"></button>
@@ -136,7 +209,7 @@ const WORK = [
     uri: "spotify:album:02VRifrsiTM73hPGjXduRQ", album: true }
 ];
 
-// Shown in the evening (5 pm to 5 am). Full-length albums, oldest first.
+// Shown in the evening (5 pm to 5 am) on the turntable shelf. Full-length albums, oldest first.
 const EVENING = [
   { artist: "Vampire Weekend", albums: [
     { name: "Vampire Weekend", year: 2008, uri: "spotify:album:7n8NJkGKAl2np1bXiRn0CY" },
@@ -179,6 +252,12 @@ let manual = false;       // true once you switch views by hand
 let currentUri = null;
 let buttons = [];
 
+// Album covers, fetched from Spotify once and remembered in this browser.
+const COVERS = "workMusic.covers";
+let covers = {};
+try { covers = JSON.parse(localStorage.getItem(COVERS)) || {}; } catch (e) {}
+const idOf = (uri) => uri.split(":")[2];
+
 function setRule(text, warn) {
   ruleEl.textContent = text;
   ruleEl.classList.toggle("warn", !!warn);
@@ -189,14 +268,42 @@ function clockMode() {
   return (h >= EVENING_STARTS || h < EVENING_ENDS) ? "evening" : "work";
 }
 
-function makeButton(label, sub, opt) {
+function workButton(opt) {
   const b = document.createElement("button");
   b.className = "choice";
   b.type = "button";
   b.setAttribute("aria-pressed", opt.uri === currentUri ? "true" : "false");
   b.innerHTML = '<span class="icon">' + PLAY_ICON + '</span><span><span class="name"></span><span class="sub"></span></span>';
-  b.querySelector(".name").textContent = label;
-  b.querySelector(".sub").textContent = sub;
+  b.querySelector(".name").textContent = "Play " + opt.name;
+  b.querySelector(".sub").textContent = opt.sub;
+  b.addEventListener("click", () => choose(opt, b));
+  buttons.push(b);
+  return b;
+}
+
+function albumTile(al) {
+  const opt = { uri: al.uri, album: true, name: al.name };
+  const b = document.createElement("button");
+  b.className = "tile";
+  b.type = "button";
+  b.setAttribute("aria-pressed", al.uri === currentUri ? "true" : "false");
+  b.setAttribute("aria-label", "Play " + al.name + ", " + al.year);
+  const cover = document.createElement("span");
+  cover.className = "cover";
+  const url = covers[idOf(al.uri)];
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url; img.alt = ""; img.loading = "lazy";
+    cover.appendChild(img);
+  } else {
+    const f = document.createElement("span");
+    f.className = "fallback";
+    f.textContent = al.name;
+    cover.appendChild(f);
+  }
+  const t = document.createElement("span"); t.className = "t"; t.textContent = al.name;
+  const y = document.createElement("span"); y.className = "y"; y.textContent = al.year;
+  b.append(cover, t, y);
   b.addEventListener("click", () => choose(opt, b));
   buttons.push(b);
   return b;
@@ -206,36 +313,34 @@ function render(newMode) {
   mode = newMode;
   buttons = [];
   choicesEl.innerHTML = "";
-  document.body.classList.toggle("evening", mode === "evening");
-  $("brand").textContent = mode === "evening" ? "Evening Music" : "Work Music";
-  document.title = mode === "evening" ? "Evening Music" : "Work Music";
+  const evening = mode === "evening";
+  document.body.classList.toggle("evening", evening);
+  $("table").hidden = !evening;
+  $("brand").textContent = evening ? "Evening Music" : "Work Music";
+  document.title = evening ? "Evening Music" : "Work Music";
   $("date").textContent =
     new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 
-  if (mode === "work") {
-    choicesEl.classList.remove("compact");
-    WORK.forEach(opt => choicesEl.appendChild(makeButton("Play " + opt.name, opt.sub, opt)));
+  if (!evening) {
+    WORK.forEach(opt => choicesEl.appendChild(workButton(opt)));
   } else {
-    choicesEl.classList.add("compact");
     EVENING.forEach(group => {
       const sec = document.createElement("section");
       sec.className = "artist";
       const h = document.createElement("h2");
       h.textContent = group.artist;
       const grid = document.createElement("div");
-      grid.className = "albums";
-      group.albums.forEach(al => {
-        grid.appendChild(makeButton(al.name, String(al.year), { uri: al.uri, album: true, name: al.name }));
-      });
+      grid.className = "shelf";
+      group.albums.forEach(al => grid.appendChild(albumTile(al)));
       sec.append(h, grid);
       choicesEl.appendChild(sec);
     });
   }
 
-  if (!currentUri && !ruleEl.classList.contains("warn")) setRule(mode === "evening"
-    ? "Pick an album. It plays right here."
+  if (!currentUri && !ruleEl.classList.contains("warn")) setRule(evening
+    ? "Pick an album from the shelf. It plays right here."
     : "Pick one. It plays right here until you pause it.");
-  switchEl.textContent = mode === "evening" ? "Show work music" : "Show evening albums";
+  switchEl.textContent = evening ? "Show work music" : "Show evening albums";
 }
 
 switchEl.addEventListener("click", () => {
@@ -248,6 +353,14 @@ switchEl.addEventListener("click", () => {
 setInterval(() => {
   if (!manual && clockMode() !== mode) render(clockMode());
 }, 60000);
+
+// ---- Turntable label ----
+function setLabel(url, text) {
+  const img = $("labelImg");
+  if (url) { img.src = url; img.hidden = false; }
+  else { img.hidden = true; img.removeAttribute("src"); }
+  $("labelText").textContent = url ? "" : (text || "Pick an album");
+}
 
 // ===========================================================================
 // Spotify sign-in (PKCE: no secret key, the sign-in stays in this browser)
@@ -327,6 +440,26 @@ function showSignIn(msg) {
 }
 $("connect").addEventListener("click", signIn);
 
+// Fetch any covers this browser hasn't saved yet (one small request per album, only the first time).
+async function loadCovers() {
+  const ids = EVENING.flatMap(g => g.albums.map(a => idOf(a.uri))).filter(id => !covers[id]);
+  if (!ids.length) return;
+  const t = await getToken();
+  if (!t) return;
+  await Promise.all(ids.map(async id => {
+    try {
+      const r = await fetch("https://api.spotify.com/v1/albums/" + id, { headers: { Authorization: "Bearer " + t } });
+      if (!r.ok) return;
+      const j = await r.json();
+      const imgs = (j.images || []).slice().sort((a, b) => (a.width || 0) - (b.width || 0));
+      const pick = imgs.find(i => (i.width || 0) >= 300) || imgs[imgs.length - 1];
+      if (pick) covers[id] = pick.url;
+    } catch (e) {}
+  }));
+  try { localStorage.setItem(COVERS, JSON.stringify(covers)); } catch (e) {}
+  if (mode === "evening") render("evening");
+}
+
 // ===========================================================================
 // The in-page player (Spotify Web Playback SDK)
 // ===========================================================================
@@ -355,18 +488,24 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     deviceId = device_id;
     if (pending) { const p = pending; pending = null; playUri(p); }
   });
-  player.addListener("not_ready", () => { deviceId = null; });
+  player.addListener("not_ready", () => { deviceId = null; $("table").classList.remove("playing"); });
 
   player.addListener("player_state_changed", state => {
-    if (!state || !state.track_window || !state.track_window.current_track) return;
+    if (!state || !state.track_window || !state.track_window.current_track) {
+      $("table").classList.remove("playing");
+      return;
+    }
     const t = state.track_window.current_track;
     paused = state.paused;
+    $("table").classList.toggle("playing", !paused);
     $("now").hidden = false;
     $("track").textContent = t.name;
     $("by").textContent = t.artists.map(a => a.name).join(", ") + " · " + t.album.name;
-    const img = (t.album.images || []).slice().sort((a, b) => (a.width || 0) - (b.width || 0))
-      .find(i => (i.width || 0) >= 64) || (t.album.images || [])[0];
-    if (img) $("art").src = img.url;
+    const imgs = (t.album.images || []).slice().sort((a, b) => (a.width || 0) - (b.width || 0));
+    const small = imgs.find(i => (i.width || 0) >= 64) || imgs[0];
+    const big = imgs.find(i => (i.width || 0) >= 300) || imgs[imgs.length - 1];
+    if (small) $("art").src = small.url;
+    if (big) setLabel(big.url);
     setToggleIcon();
   });
 
@@ -412,6 +551,9 @@ async function playUri(opt) {
 function choose(opt, btn) {
   currentUri = opt.uri;
   buttons.forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+  // Put the cover on the record right away; the arm drops once the music starts.
+  if (opt.album && covers[idOf(opt.uri)]) setLabel(covers[idOf(opt.uri)]);
+  else setLabel(null, opt.name);
   // Browsers only allow sound after a click; this tells the player the click happened.
   if (player && player.activateElement) { try { player.activateElement(); } catch (e) {} }
   if (!loadAuth()) { showSignIn("Sign in to Spotify first. After that, one click plays."); return; }
@@ -436,7 +578,7 @@ setToggleIcon();
 (async () => {
   try { await finishSignInIfReturning(); }
   catch (e) { setRule("Sign-in didn't finish. Try signing in again.", true); }
-  if (loadAuth()) { $("signin").hidden = true; startPlayer(); }
+  if (loadAuth()) { $("signin").hidden = true; startPlayer(); loadCovers(); }
   else showSignIn();
 })();
 </script>
