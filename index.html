@@ -239,7 +239,7 @@ body.full .wrap > .rule { min-height: 1.4em; }
       <div class="table" id="table" hidden aria-hidden="true">
         <div class="platter">
           <div class="vinyl">
-            <div class="label"><img id="labelImg" alt="" hidden><span id="labelText">Pick an album</span></div>
+            <div class="label"><img id="labelImg" alt="" hidden><span id="labelText"></span></div>
           </div>
         </div>
         <div class="pivot"></div>
@@ -562,7 +562,7 @@ function setLabel(url, text) {
   const img = $("labelImg");
   if (url) { img.src = url; img.hidden = false; }
   else { img.hidden = true; img.removeAttribute("src"); }
-  $("labelText").textContent = url ? "" : (text || "Pick an album");
+  $("labelText").textContent = url ? "" : (text || "");
 }
 
 // ===========================================================================
