@@ -28,6 +28,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.6 
 .wrap { max-width: 560px; margin: 0 auto; padding: 48px 16px 64px; display: grid; gap: 24px; }
 body.evening .wrap { max-width: 1180px; }
 .wrap > *, .stage > *, .choices > * { min-width: 0; }
+/* The albums page keeps just the full screen button up top: no title, no date. */
+body.evening .brand, body.evening .date { display: none; }
+body.evening header { justify-content: flex-end; }
 header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .brand { font: 500 1.6rem/1.1 var(--font-display); margin: 0; }
 body.evening .brand { font-size: 1.9rem; }
@@ -104,8 +107,7 @@ body.evening .choices { flex: 1.4 1 460px; min-width: 0; }
 }
 .pulled .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pulled .fallback { font: 500 1rem/1.2 var(--font-display); padding: 12px; color: var(--accent); text-align: center; }
-.pulled .tag { display: inline-block; padding: 4px 10px; border-radius: 12px; background: var(--accent); color: var(--card); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.4; }
-.pulled .pn { display: block; margin-top: 10px; font: 500 1.375rem/1.15 var(--font-display); }
+.pulled .pn { display: block; font: 500 1.375rem/1.15 var(--font-display); }
 .pulled .ps { display: block; margin-top: 4px; font-size: 0.875rem; color: var(--muted); }
 .pulled.empty .art { background: none; box-shadow: none; border: 1px dashed var(--line); }
 .pulled.empty p { margin: 0; color: var(--muted); font-size: 0.9375rem; max-width: 24ch; }
@@ -460,10 +462,9 @@ function fillPulled() {
     f.className = "fallback"; f.textContent = al.name; art.appendChild(f);
   }
   const info = document.createElement("div");
-  const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "Pulled out";
   const pn = document.createElement("span"); pn.className = "pn"; pn.textContent = al.name;
   const ps = document.createElement("span"); ps.className = "ps"; ps.textContent = shownGroup.artist + " · " + al.year;
-  info.append(tag, pn, ps);
+  info.append(pn, ps);
   pulledEl.append(art, info);
 }
 
@@ -542,6 +543,8 @@ function render(newMode) {
     requestAnimationFrame(() => { if (sel) nav.scrollLeft = Math.max(0, sel.offsetLeft - 16); });
   }
 
+  // Don't carry a work-view hint over onto the albums page.
+  if (evening && currentUri && !ruleEl.classList.contains("warn")) setRule("");
   if (!currentUri && !ruleEl.classList.contains("warn")) setRule(evening
     ? "Pick an artist, then an album. It plays right here."
     : "Pick one. It plays right here until you pause it.");
@@ -744,9 +747,11 @@ async function playUri(opt) {
     // Playlists start on shuffle so they don't open on the same song every day; albums play in order.
     await api("/me/player/play?device_id=" + deviceId, "PUT", { context_uri: opt.uri });
     api("/me/player/shuffle?state=" + (opt.album ? "false" : "true") + "&device_id=" + deviceId, "PUT").catch(() => {});
-    setRule(opt.album
-      ? "Albums stop when they end. Pick it again to hear it twice."
-      : "This runs until you pause it. Pick another any time to switch.");
+    // The albums page stays quiet; the work view keeps its short hints.
+    setRule(mode === "evening" ? ""
+      : opt.album
+        ? "Albums stop when they end. Pick it again to hear it twice."
+        : "This runs until you pause it. Pick another any time to switch.");
   } catch (e) {
     if (e.message === "403") setRule("Spotify blocked playback. Check that this account is listed under User Management in your Spotify developer app.", true);
     else if (e.message !== "no token" && e.message !== "401") setRule("Spotify didn't start that one. Try again in a moment.", true);
