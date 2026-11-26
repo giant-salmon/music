@@ -89,16 +89,25 @@ body.evening .choices { flex: 1.4 1 460px; min-width: 0; }
 .spine {
   position: relative; flex: 0 1 62px; min-width: 38px; height: calc(var(--shelf-h) - 66px);
   padding: 0; border: 0; border-radius: 3px 3px 0 0; background: var(--tint); color: var(--ink);
-  cursor: pointer; box-shadow: 2px 0 6px rgba(0, 0, 0, .2); transition: transform .22s ease;
+  cursor: pointer; box-shadow: 2px 0 6px rgba(0, 0, 0, .2); overflow: hidden;
+  transition: transform .22s ease, background-color .3s ease, color .3s ease;
 }
+/* If Spotify ever stops letting the page read cover colors, the spine shows a soft blur of the cover instead. */
+.spine.art { text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+.spine.art::before { content: ""; position: absolute; inset: -24px; background: var(--cover) center / cover; filter: blur(16px) saturate(1.2); }
+.spine.art::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .3); }
 .spine:hover { transform: translateY(-8px); }
 .spine[aria-pressed="true"], .spine[aria-pressed="true"]:hover { transform: translateY(-40px); box-shadow: 2px 0 6px rgba(0, 0, 0, .2), 0 0 0 2px var(--accent); }
 .spine .nm {
-  position: absolute; top: 14px; left: 50%; translate: -50% 0; max-height: calc(100% - 46px);
+  position: absolute; z-index: 1; top: 14px; left: 50%; translate: -50% 0; max-height: calc(100% - 54px);
   writing-mode: vertical-rl; white-space: normal; overflow-wrap: anywhere; text-align: start;
   font: 500 0.875rem/1.15 var(--font-display);
 }
-.spine .yr { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: 0.6875rem; letter-spacing: 0.04em; }
+.spine .yr {
+  position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; height: 32px; display: grid; place-items: center;
+  background: var(--band, rgba(0, 0, 0, .12)); color: var(--band-ink, inherit);
+  font-size: 0.6875rem; letter-spacing: 0.04em; transition: background-color .3s ease, color .3s ease;
+}
 .pulled { display: flex; align-items: center; gap: 20px; margin-top: 24px; min-height: 156px; }
 .pulled .art {
   flex: none; width: 156px; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--accent-bg);
@@ -387,6 +396,13 @@ let covers = {};
 try { covers = JSON.parse(localStorage.getItem(COVERS)) || {}; } catch (e) {}
 const idOf = (uri) => uri.split(":")[2];
 
+// Spine colors, sampled from each cover once and remembered in this browser.
+const SPINE_COLORS = "workMusic.spineColors";
+let spineColors = {};
+try { spineColors = JSON.parse(localStorage.getItem(SPINE_COLORS)) || {}; } catch (e) {}
+let artBlocked = false;   // true if Spotify's image server won't let the page read cover pixels
+const sampling = {};
+
 function setRule(text, warn) {
   ruleEl.textContent = text;
   ruleEl.classList.toggle("warn", !!warn);
@@ -417,6 +433,110 @@ function inkFor(hex) {
 }
 function hashOf(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
+// ---- Spine colors from the cover ----
+const hexOf = (c) => "#" + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
+function relLum(c) {
+  const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+}
+// Dark or light text, whichever reads better on this color.
+function inkOn(c) {
+  const L = relLum(c);
+  return (L + 0.05) / 0.062 >= 1.03 / (L + 0.05) ? "#1d1b18" : "#fffdf9";
+}
+function satOf(c) { const mx = Math.max(...c), mn = Math.min(...c); return mx ? (mx - mn) / mx : 0; }
+// Nudge a middle-tone color just enough darker or lighter that its text reads clearly.
+function readable(c) {
+  for (let i = 0; i < 14; i++) {
+    const L = relLum(c), onDark = (L + 0.05) / 0.062, onLight = 1.03 / (L + 0.05);
+    if (Math.max(onDark, onLight) >= 4.5) break;
+    c = onLight >= onDark ? c.map(v => v * 0.92) : c.map(v => v + (255 - v) * 0.1);
+  }
+  return c;
+}
+
+// The cover's main color for the spine, plus a second color from the cover for the year band.
+function paletteOf(d) {
+  const buckets = new Map();
+  let total = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 128) continue;
+    const key = (d[i] >> 5) << 6 | (d[i + 1] >> 5) << 3 | (d[i + 2] >> 5);
+    let k = buckets.get(key);
+    if (!k) buckets.set(key, k = { n: 0, r: 0, g: 0, b: 0 });
+    k.n++; k.r += d[i]; k.g += d[i + 1]; k.b += d[i + 2]; total++;
+  }
+  const list = [...buckets.values()].map(k => ({ n: k.n, c: [k.r / k.n, k.g / k.n, k.b / k.n] })).sort((a, b) => b.n - a.n);
+  const bg = list[0].c;
+  let band = null, best = 0;
+  for (const k of list) {
+    if (k.n < total * 0.03) break;
+    const dist = Math.hypot(k.c[0] - bg[0], k.c[1] - bg[1], k.c[2] - bg[2]);
+    if (dist < 70) continue;
+    const score = dist * Math.sqrt(k.n) * (0.6 + satOf(k.c));
+    if (score > best) { best = score; band = k.c; }
+  }
+  // No clear second color on the cover: use a darker (or lighter) shade of the main one.
+  if (!band) band = relLum(bg) > 0.3 ? bg.map(v => v * 0.75) : bg.map(v => v + (255 - v) * 0.25);
+  const main = readable(bg), second = readable(band);
+  return { bg: hexOf(main), ink: inkOn(main), band: hexOf(second), bandInk: inkOn(second) };
+}
+
+function sampleCover(id) {
+  if (spineColors[id]) return Promise.resolve(spineColors[id]);
+  if (!covers[id] || artBlocked) return Promise.resolve(null);
+  if (sampling[id]) return sampling[id];
+  sampling[id] = new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 32;
+        const ctx = cv.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, 32, 32);
+        spineColors[id] = paletteOf(ctx.getImageData(0, 0, 32, 32).data);
+        try { localStorage.setItem(SPINE_COLORS, JSON.stringify(spineColors)); } catch (e) {}
+        resolve(spineColors[id]);
+      } catch (e) { artBlocked = true; resolve(null); }
+    };
+    // A failed load could be one broken image or Spotify refusing the color read. Try a plain load to tell which.
+    img.onerror = () => {
+      const plain = new Image();
+      plain.onload = () => { artBlocked = true; resolve(null); };
+      plain.onerror = () => resolve(null);
+      plain.src = covers[id];
+    };
+    img.src = covers[id];
+  }).finally(() => { delete sampling[id]; });
+  return sampling[id];
+}
+
+function paintSpine(b) {
+  const id = b.dataset.id, pal = spineColors[id];
+  if (pal) {
+    b.classList.remove("art");
+    b.style.setProperty("--tint", pal.bg);
+    b.style.setProperty("--ink", pal.ink);
+    b.style.setProperty("--band", pal.band);
+    b.style.setProperty("--band-ink", pal.bandInk);
+  } else if (artBlocked && covers[id]) {
+    b.classList.add("art");
+    b.style.setProperty("--cover", 'url("' + covers[id] + '")');
+    b.style.setProperty("--ink", "#fffdf9");
+    b.style.setProperty("--band", "rgba(0, 0, 0, .35)");
+    b.style.setProperty("--band-ink", "#fffdf9");
+  }
+}
+
+// After covers are known, sample any that haven't been yet, one at a time, so every artist is ready.
+async function warmSpineColors() {
+  for (const g of EVENING) for (const al of g.albums) {
+    if (artBlocked) return;
+    await sampleCover(idOf(al.uri));
+  }
+}
+
 // One album, standing on the shelf by its spine. The one that's playing is pulled up.
 function spineEl(al, j, tint) {
   const opt = { uri: al.uri, album: true, name: al.name };
@@ -431,6 +551,9 @@ function spineEl(al, j, tint) {
   const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = al.name;
   const yr = document.createElement("span"); yr.className = "yr"; yr.textContent = al.year;
   b.append(nm, yr);
+  b.dataset.id = idOf(al.uri);
+  paintSpine(b);
+  if (!spineColors[b.dataset.id]) sampleCover(b.dataset.id).then(() => paintSpine(b));
   b.addEventListener("click", () => choose(opt, b));
   buttons.push(b);
   return b;
@@ -807,7 +930,7 @@ setToggleIcon();
 (async () => {
   try { await finishSignInIfReturning(); }
   catch (e) { setRule("Sign-in didn't finish. Try signing in again.", true); }
-  if (loadAuth()) { $("signin").hidden = true; startPlayer(); loadCovers(); }
+  if (loadAuth()) { $("signin").hidden = true; startPlayer(); loadCovers().then(warmSpineColors, () => {}); }
   else showSignIn();
 })();
 </script>
