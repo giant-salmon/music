@@ -79,7 +79,6 @@ body.evening .choices { flex: 1.4 1 460px; min-width: 0; }
 .tab[aria-current="true"] { width: 100%; background: var(--accent); color: var(--card); }
 .bin { flex: 1 1 auto; min-width: 0; --shelf-h: 340px; }
 .bin h2 { margin: 0; font: 500 1.75rem/1.1 var(--font-display); }
-.bin .count { display: block; margin-top: 4px; font-size: 0.875rem; color: var(--muted); }
 .rack { position: relative; margin-top: 8px; }
 .spines {
   height: var(--shelf-h); padding: 48px 8px 18px; display: flex; align-items: flex-end; gap: 6px;
@@ -474,8 +473,6 @@ function buildBin() {
   shownGroup = ARTISTS.find(g => g.artist === artistSel) || ARTISTS[0];
   binEl.innerHTML = "";
   const h = document.createElement("h2"); h.textContent = shownGroup.artist;
-  const c = document.createElement("span"); c.className = "count";
-  c.textContent = shownGroup.albums.length + (shownGroup.albums.length === 1 ? " album" : " albums");
   const rack = document.createElement("div"); rack.className = "rack";
   const spines = document.createElement("div"); spines.className = "spines";
   const base = hashOf(shownGroup.artist);
@@ -483,7 +480,7 @@ function buildBin() {
   const plank = document.createElement("div"); plank.className = "plank"; plank.setAttribute("aria-hidden", "true");
   rack.append(spines, plank);
   pulledEl = document.createElement("div");
-  binEl.append(h, c, rack, pulledEl);
+  binEl.append(h, rack, pulledEl);
   fillPulled();
 }
 
@@ -543,11 +540,11 @@ function render(newMode) {
     requestAnimationFrame(() => { if (sel) nav.scrollLeft = Math.max(0, sel.offsetLeft - 16); });
   }
 
-  // Don't carry a work-view hint over onto the albums page.
-  if (evening && currentUri && !ruleEl.classList.contains("warn")) setRule("");
-  if (!currentUri && !ruleEl.classList.contains("warn")) setRule(evening
-    ? "Pick an artist, then an album. It plays right here."
-    : "Pick one. It plays right here until you pause it.");
+  // The albums page has no hint line (and doesn't keep one from the work view).
+  if (!ruleEl.classList.contains("warn")) {
+    if (evening) setRule("");
+    else if (!currentUri) setRule("Pick one. It plays right here until you pause it.");
+  }
   switchEl.textContent = evening ? "Show work music" : "Show evening albums";
 }
 
