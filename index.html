@@ -16,15 +16,18 @@
 }
 body.evening {
   --bg: #f3eee8; --accent: #8a4b2a; --accent-bg: #f4e4d8; --muted: #6b655e;
+  --wood: #b3834f; --wood-dark: #8a5e37; --paper: #d9c7aa; --paper-ink: #3b2f22;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #171614; --card: #201f1c; --text: #ece8e1; --muted: #9a948b; --line: #34312c; --accent: #7cc4a0; --accent-bg: #1f3329; --warn: #e8a27a; }
-  body.evening { --bg: #181513; --accent: #e3a17c; --accent-bg: #3a261b; --muted: #9a948b; }
+  body.evening { --bg: #181513; --accent: #e3a17c; --accent-bg: #3a261b; --muted: #9a948b;
+    --wood: #8a6238; --wood-dark: #6a4a2a; --paper: #3a322a; --paper-ink: #e0d4c2; }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.6 var(--font-body); }
 .wrap { max-width: 560px; margin: 0 auto; padding: 48px 16px 64px; display: grid; gap: 24px; }
 body.evening .wrap { max-width: 1180px; }
+.wrap > *, .stage > *, .choices > * { min-width: 0; }
 header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .brand { font: 500 1.6rem/1.1 var(--font-display); margin: 0; }
 body.evening .brand { font-size: 1.9rem; }
@@ -47,7 +50,7 @@ body.evening .choices { flex: 1.4 1 460px; min-width: 0; }
   transition: border-color .15s, background .15s;
 }
 .choice:hover { border-color: var(--accent); }
-.choice:focus-visible, .ctl:focus-visible, .connect:focus-visible, .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.choice:focus-visible, .ctl:focus-visible, .connect:focus-visible, .tab:focus-visible, .spine:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
 .icon {
   flex: none; width: 40px; height: 40px; border-radius: 50%;
@@ -57,22 +60,66 @@ body.evening .choices { flex: 1.4 1 460px; min-width: 0; }
 .choice .name { display: block; font: 500 1.08rem/1.25 var(--font-display); }
 .choice .sub { display: block; font-size: 0.8125rem; color: var(--muted); }
 
-/* Evening shelf */
-.artist { display: grid; gap: 10px; }
-.artist + .artist { margin-top: 18px; }
-.artist h2 { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
-.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 12px; }
-.tile { display: grid; gap: 6px; align-content: start; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: var(--text); font: inherit; }
-.tile .cover {
-  aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--accent-bg);
-  display: grid; place-items: center; transition: transform .15s ease, box-shadow .15s ease;
+/* Evening crate: artist tabs down the side (A to Z), the chosen artist's albums standing on a shelf */
+.crate { display: flex; gap: 22px; align-items: flex-start; }
+.tabs {
+  position: relative; flex: none; width: 168px; display: flex; flex-direction: column; gap: 4px;
+  padding-left: 8px; border-left: 6px solid var(--wood-dark);
 }
-.tile:hover .cover { transform: translateY(-3px); }
-.tile[aria-pressed="true"] .cover { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
-.tile .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tile .fallback { font: 500 0.85rem/1.2 var(--font-display); padding: 10px; color: var(--accent); text-align: center; }
-.tile .t { font-size: 0.8125rem; line-height: 1.25; }
-.tile .y { font-size: 0.75rem; color: var(--muted); margin-top: -4px; }
+.tab {
+  flex: none; width: 88%; height: 36px; padding: 0 12px; border: 0; border-radius: 0 8px 8px 0;
+  background: var(--paper); color: var(--paper-ink); font: 500 0.75rem/1 var(--font-body);
+  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: width .15s ease, background .15s ease;
+}
+.tab:hover { width: 94%; }
+.tab[aria-current="true"] { width: 100%; background: var(--accent); color: var(--card); }
+.bin { flex: 1 1 auto; min-width: 0; --shelf-h: 340px; }
+.bin h2 { margin: 0; font: 500 1.75rem/1.1 var(--font-display); }
+.bin .count { display: block; margin-top: 4px; font-size: 0.875rem; color: var(--muted); }
+.rack { position: relative; margin-top: 8px; }
+.spines {
+  height: var(--shelf-h); padding: 48px 8px 18px; display: flex; align-items: flex-end; gap: 6px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.spines::-webkit-scrollbar { display: none; }
+.plank { position: absolute; left: -6px; right: -6px; bottom: 0; height: 18px; background: var(--wood); border-radius: 3px; box-shadow: 0 3px 8px rgba(0, 0, 0, .18); }
+.spine {
+  --k: 1; position: relative; flex: 0 1 62px; min-width: 38px; height: calc(var(--k) * (var(--shelf-h) - 66px));
+  padding: 0; border: 0; border-radius: 3px 3px 0 0; background: var(--tint); color: var(--ink);
+  cursor: pointer; box-shadow: 2px 0 6px rgba(0, 0, 0, .2); transition: transform .22s ease;
+}
+.spine:hover { transform: translateY(-8px); }
+.spine[aria-pressed="true"], .spine[aria-pressed="true"]:hover { transform: translateY(-40px); box-shadow: 2px 0 6px rgba(0, 0, 0, .2), 0 0 0 2px var(--accent); }
+.spine .nm {
+  position: absolute; top: 14px; left: 50%; translate: -50% 0; max-height: calc(100% - 48px);
+  writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 500 0.875rem/1.2 var(--font-display);
+}
+.spine .yr { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: 0.6875rem; letter-spacing: 0.04em; }
+.pulled { display: flex; align-items: center; gap: 20px; margin-top: 24px; min-height: 156px; }
+.pulled .art {
+  flex: none; width: 156px; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--accent-bg);
+  display: grid; place-items: center; box-shadow: 0 6px 16px rgba(0, 0, 0, .22);
+}
+.pulled .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pulled .fallback { font: 500 1rem/1.2 var(--font-display); padding: 12px; color: var(--accent); text-align: center; }
+.pulled .tag { display: inline-block; padding: 4px 10px; border-radius: 12px; background: var(--accent); color: var(--card); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.4; }
+.pulled .pn { display: block; margin-top: 10px; font: 500 1.375rem/1.15 var(--font-display); }
+.pulled .ps { display: block; margin-top: 4px; font-size: 0.875rem; color: var(--muted); }
+.pulled.empty .art { background: none; box-shadow: none; border: 1px dashed var(--line); }
+.pulled.empty p { margin: 0; color: var(--muted); font-size: 0.9375rem; max-width: 24ch; }
+@media (prefers-reduced-motion: reduce) { .spine, .tab { transition: none; } }
+@media (max-width: 640px) {
+  .crate { flex-direction: column; gap: 14px; align-self: stretch; }
+  .tabs { width: 100%; min-width: 0; flex-direction: row; align-items: flex-end; padding: 0; border-left: 0; border-bottom: 6px solid var(--wood-dark); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab, .tab:hover, .tab[aria-current="true"] { width: auto; height: 38px; padding: 0 14px; border-radius: 8px 8px 0 0; }
+  .tab[aria-current="true"] { height: 44px; }
+  .bin { width: 100%; --shelf-h: 300px; }
+  .pulled .art { width: 120px; }
+  .pulled { min-height: 120px; }
+}
 
 /* Turntable */
 .table[hidden] { display: none; }
@@ -155,8 +202,14 @@ body.full.evening .left {
   width: min(48vw, calc((100vh - 250px) * 52 / 47));
 }
 body.full.evening .choices { flex: 1 1 auto; overflow-y: auto; padding: 6px 12px 24px 6px; }
-body.full.evening .shelf { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px 16px; }
-body.full.evening .artist + .artist { margin-top: 26px; }
+body.full.evening .tabs { width: 210px; }
+body.full.evening .tab { height: 42px; font-size: 0.875rem; }
+body.full.evening .bin { --shelf-h: clamp(280px, calc(100vh - 560px), 520px); }
+body.full.evening .bin h2 { font-size: 2.1rem; }
+body.full.evening .spine { flex-basis: 76px; }
+body.full.evening .spine .nm { font-size: 1rem; }
+body.full.evening .pulled .art { width: 170px; }
+body.full.evening .pulled .pn { font-size: 1.6rem; }
 body.full .wrap > .rule { min-height: 1.4em; }
 @media (max-width: 760px) { body.full.evening .stage { flex-wrap: wrap; } body.full.evening .left { width: 100%; } }
 
@@ -319,6 +372,15 @@ let manual = false;       // true once you switch views by hand
 let currentUri = null;
 let buttons = [];
 
+// Evening crate: artists run A to Z down the side tabs; albums inside each artist stay oldest first.
+const ARTISTS = EVENING.slice().sort((a, b) => a.artist.localeCompare(b.artist, undefined, { sensitivity: "base" }));
+const TINTS = ["#c9a27e", "#5d6b7d", "#b5654a", "#d8c8a8", "#4f5d4a", "#a3836b", "#8c6f8a", "#e0b65a",
+               "#6f8f8f", "#c48b7a", "#3f4a5c", "#d9a9a0", "#9a8f5f", "#7a5c4f", "#b88a5a", "#6e7f62"];
+const SPINE_K = [0.92, 1, 0.9, 0.97, 0.93, 0.99];   // slightly different spine heights, like real records
+const ARTIST_KEY = "workMusic.artist";
+let artistSel = null;     // the artist whose albums are on the shelf
+let shownGroup = null, tabEls = [], binEl = null, pulledEl = null;
+
 // Album covers, fetched from Spotify once and remembered in this browser.
 const COVERS = "workMusic.covers";
 let covers = {};
@@ -348,32 +410,87 @@ function workButton(opt) {
   return b;
 }
 
-function albumTile(al) {
+function inkFor(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return l > 0.58 ? "#22201c" : "#fffdf9";
+}
+function hashOf(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
+
+// One album, standing on the shelf by its spine. The one that's playing is pulled up.
+function spineEl(al, j, tint) {
   const opt = { uri: al.uri, album: true, name: al.name };
   const b = document.createElement("button");
-  b.className = "tile";
+  b.className = "spine";
   b.type = "button";
+  b.style.setProperty("--k", SPINE_K[j % SPINE_K.length]);
+  b.style.setProperty("--tint", tint);
+  b.style.setProperty("--ink", inkFor(tint));
   b.setAttribute("aria-pressed", al.uri === currentUri ? "true" : "false");
   b.setAttribute("aria-label", "Play " + al.name + ", " + al.year);
-  const cover = document.createElement("span");
-  cover.className = "cover";
-  const url = covers[idOf(al.uri)];
-  if (url) {
-    const img = document.createElement("img");
-    img.src = url; img.alt = ""; img.loading = "lazy";
-    cover.appendChild(img);
-  } else {
-    const f = document.createElement("span");
-    f.className = "fallback";
-    f.textContent = al.name;
-    cover.appendChild(f);
-  }
-  const t = document.createElement("span"); t.className = "t"; t.textContent = al.name;
-  const y = document.createElement("span"); y.className = "y"; y.textContent = al.year;
-  b.append(cover, t, y);
+  b.title = al.name + " (" + al.year + ")";
+  const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = al.name;
+  const yr = document.createElement("span"); yr.className = "yr"; yr.textContent = al.year;
+  b.append(nm, yr);
   b.addEventListener("click", () => choose(opt, b));
   buttons.push(b);
   return b;
+}
+
+// The cover of the album that's pulled out, shown big under the shelf.
+function fillPulled() {
+  if (!pulledEl || !shownGroup) return;
+  const al = shownGroup.albums.find(a => a.uri === currentUri);
+  pulledEl.className = "pulled" + (al ? "" : " empty");
+  pulledEl.innerHTML = "";
+  const art = document.createElement("span");
+  art.className = "art";
+  if (!al) {
+    const p = document.createElement("p");
+    p.textContent = "Tap a spine to pull the record out and play it.";
+    pulledEl.append(art, p);
+    return;
+  }
+  const url = covers[idOf(al.uri)];
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url; img.alt = ""; art.appendChild(img);
+  } else {
+    const f = document.createElement("span");
+    f.className = "fallback"; f.textContent = al.name; art.appendChild(f);
+  }
+  const info = document.createElement("div");
+  const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "Pulled out";
+  const pn = document.createElement("span"); pn.className = "pn"; pn.textContent = al.name;
+  const ps = document.createElement("span"); ps.className = "ps"; ps.textContent = shownGroup.artist + " · " + al.year;
+  info.append(tag, pn, ps);
+  pulledEl.append(art, info);
+}
+
+// Fill the shelf with the chosen artist's albums.
+function buildBin() {
+  buttons = [];
+  shownGroup = ARTISTS.find(g => g.artist === artistSel) || ARTISTS[0];
+  binEl.innerHTML = "";
+  const h = document.createElement("h2"); h.textContent = shownGroup.artist;
+  const c = document.createElement("span"); c.className = "count";
+  c.textContent = shownGroup.albums.length + (shownGroup.albums.length === 1 ? " album" : " albums");
+  const rack = document.createElement("div"); rack.className = "rack";
+  const spines = document.createElement("div"); spines.className = "spines";
+  const base = hashOf(shownGroup.artist);
+  shownGroup.albums.forEach((al, j) => spines.appendChild(spineEl(al, j, TINTS[(base + j * 5) % TINTS.length])));
+  const plank = document.createElement("div"); plank.className = "plank"; plank.setAttribute("aria-hidden", "true");
+  rack.append(spines, plank);
+  pulledEl = document.createElement("div");
+  binEl.append(h, c, rack, pulledEl);
+  fillPulled();
+}
+
+function pickArtist(name) {
+  artistSel = name;
+  try { localStorage.setItem(ARTIST_KEY, name); } catch (e) {}
+  tabEls.forEach(t => t.setAttribute("aria-current", t.dataset.artist === name ? "true" : "false"));
+  buildBin();
 }
 
 function render(newMode) {
@@ -391,21 +508,42 @@ function render(newMode) {
   if (!evening) {
     WORK.forEach(opt => choicesEl.appendChild(workButton(opt)));
   } else {
-    EVENING.forEach(group => {
-      const sec = document.createElement("section");
-      sec.className = "artist";
-      const h = document.createElement("h2");
-      h.textContent = group.artist;
-      const grid = document.createElement("div");
-      grid.className = "shelf";
-      group.albums.forEach(al => grid.appendChild(albumTile(al)));
-      sec.append(h, grid);
-      choicesEl.appendChild(sec);
+    // Start on the artist that's playing, else the one you used last, else the first.
+    if (!ARTISTS.some(g => g.artist === artistSel)) {
+      const playing = ARTISTS.find(g => g.albums.some(a => a.uri === currentUri));
+      let saved = null;
+      try { saved = localStorage.getItem(ARTIST_KEY); } catch (e) {}
+      artistSel = playing ? playing.artist
+        : (ARTISTS.some(g => g.artist === saved) ? saved : ARTISTS[0].artist);
+    }
+    const crate = document.createElement("div");
+    crate.className = "crate";
+    const nav = document.createElement("nav");
+    nav.className = "tabs";
+    nav.setAttribute("aria-label", "Artists");
+    tabEls = ARTISTS.map(g => {
+      const t = document.createElement("button");
+      t.className = "tab";
+      t.type = "button";
+      t.textContent = g.artist;
+      t.dataset.artist = g.artist;
+      t.setAttribute("aria-current", g.artist === artistSel ? "true" : "false");
+      t.addEventListener("click", () => pickArtist(g.artist));
+      nav.appendChild(t);
+      return t;
     });
+    binEl = document.createElement("div");
+    binEl.className = "bin";
+    crate.append(nav, binEl);
+    choicesEl.appendChild(crate);
+    buildBin();
+    // On a phone the tabs run sideways; bring the chosen one into view.
+    const sel = tabEls.find(t => t.dataset.artist === artistSel);
+    requestAnimationFrame(() => { if (sel) nav.scrollLeft = Math.max(0, sel.offsetLeft - 16); });
   }
 
   if (!currentUri && !ruleEl.classList.contains("warn")) setRule(evening
-    ? "Pick an album from the shelf. It plays right here."
+    ? "Pick an artist, then an album. It plays right here."
     : "Pick one. It plays right here until you pause it.");
   switchEl.textContent = evening ? "Show work music" : "Show evening albums";
 }
@@ -618,6 +756,7 @@ async function playUri(opt) {
 function choose(opt, btn) {
   currentUri = opt.uri;
   buttons.forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+  if (mode === "evening") fillPulled();
   // Put the cover on the record right away; the arm drops once the music starts.
   if (opt.album && covers[idOf(opt.uri)]) setLabel(covers[idOf(opt.uri)]);
   else setLabel(null, opt.name);
